@@ -5,15 +5,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tellurium as te
 import simplesbml
-
+import time
 
 '''
 Useful tellurium functions:
         te.getODEsFromModel(te_model)
         te.getEigenvalues(te_model)
-        
-        
-        Basis = te.nullspace(A, atol=1e-13, rtol=0) 
+
+
+        Basis = te.nullspace(A, atol=1e-13, rtol=0)
         rk = te.rank(A, atol=1e-13, rtol=0)
 '''
 
@@ -33,25 +33,25 @@ def MLE_tellurium(Lambda,
                   plot_traj=False,
                   verbose=False):
     '''
-    Computes MLE of a log-linear model M_{A} given: 
+    Computes MLE of a log-linear model M_{A} given:
         - matrix Lambda (size m * s) defining te_model
         - vector of counts u (np.array, size (m,))
         - scaling vector scaling_c (np.array, size (m,))
     ! Currently no convergence criteria implemented.
-    
+
     OUTPUT:  MLE (np.array,  size (m,))
 
     Parameters
     ----------
-    te_model : tellurium model 
+    te_model : tellurium model
         Contains all species, reactions, etc. Used as part of tellurium package.
     tfinal : scalar
         final time of integration
     n_timestep : integer
-        Determines meshsize: dt = tfinal/n_timesteps. 
+        Determines meshsize: dt = tfinal/n_timesteps.
     u : np.array, size (m,)
         vector of counts. Default is None.
-        Uses normalized u as IC in te_model 
+        Uses normalized u as IC in te_model
     scaling_c (optional) : np.array, size (m,)
         Scaling vector. The default is None, translated as (1,...,1).
     err_tol (optional) : TYPE, optional
@@ -69,7 +69,8 @@ def MLE_tellurium(Lambda,
         If False, returns an empty array []
         The default is False.
     maxNumOfIntegrations (optional): integer
-        If check_convergence = True, maximum # times of repeated integrations even if hasn't converged.
+        # times of repeated integrations even if hasn't converged.
+        If check_convergence = True, maximum
     check_compatibility_class (optional) : Boolean
         If True, checks if u and x(tfinal) are in same stoichiometric compatibility class.
         If False, returns an empty array []
@@ -83,16 +84,16 @@ def MLE_tellurium(Lambda,
     -------
     MLE : np.array, size (m,)
         Final state from initial state u_normalized.
-        MLE if all entries positive. 
+        MLE if all entries positive.
     runtime (if return_runtime=True) : scalar
         Time it took odeint to integrate; uses time.time()
 
     '''
 
+    #variables
     dim_m = Lambda.shape[0]
-    #  #variables
+    #reversible pairs
     dim_s = Lambda.shape[1]
-    #  #reversible pairs
 
     if u is not None:
         u = np.array(u)
@@ -103,7 +104,7 @@ def MLE_tellurium(Lambda,
         else:
             u = u / u.sum()
             te_model = new_IC(te_model, u)
-    ## else if no u given: # use existing IC in te_model
+    # else if no u given: # use existing IC in te_model
 
     if scaling_c is not None:
         scaling_c = np.array(scaling_c)
@@ -116,12 +117,10 @@ def MLE_tellurium(Lambda,
     if err_tol is None:
         err_tol = 1e-4
 
-
-#     tic = time.time();
+    tic = time.time();
     results = te_model.simulate(0, tfinal, n_timestep)
-    #     toc = time.time();
-    #     runtime = toc - tic;
-    runtime = 0
+    toc = time.time();
+    runtime = toc - tic;
 
     if check_convergence:
         cnvg_flag, DB_residual_n = check_detailed_balancing(
@@ -130,12 +129,13 @@ def MLE_tellurium(Lambda,
             scaling_c=scaling_c,
             err_tol=err_tol)
         reintegrate_counter = 1
-        while DB_residual_n > err_tol and reintegrate_counter < maxNumOfIntegrations:  ## integrates again up to 4 more times
-            #             tic = time.time();
+        # integrates again up to 4 more times
+        while DB_residual_n > err_tol and reintegrate_counter < maxNumOfIntegrations:
+                         tic = time.time();
             results = te_model.simulate(0, tfinal, n_timestep)
-            #             toc = time.time();
-            #             runtime += toc - tic;
-            runtime = 0
+                         toc = time.time();
+                         runtime += toc - tic;
+ 
             cnvg_flag, DB_residual_n = check_detailed_balancing(
                 Lambda,
                 results[n_timestep - 1, 1:-1],
@@ -207,9 +207,7 @@ def write_tellurium_model_via_SBML(Lambda,
     '''
 
     dim_m = Lambda.shape[0]
-    #  #variables
     dim_s = Lambda.shape[1]
-    #  #reversible pairs
 
     Lambda_positive = np.maximum(Lambda, 0)
     Lambda_negative = np.maximum(-Lambda, 0)
@@ -225,12 +223,13 @@ def write_tellurium_model_via_SBML(Lambda,
                                                            scaling_c=scaling_c)
 
     SimSBML = simplesbml.SbmlModel()
-    ## create SBML model
 
-    for ss in range(dim_m):  ### adding species with concentrations 0
+    # extra species (for zero complex)
+    # adding species with concentrations 0
+    for ss in range(dim_m): 
         SimSBML.addSpecies('x' + str(ss), 0.0)
     SimSBML.addSpecies('ext_S', 0.0)
-    # extra species (for zero complex)
+    
 
     for rr in range(dim_s):  ### adding each reversible reactions
         ## SimSBML.addReaction(Reactant_list, Product_list, Rate_law, local_params=params_dict, rxn_id=rxn_id_str)
@@ -286,11 +285,11 @@ def write_tellurium_model_via_SBML(Lambda,
                             rxn_id=rxn_id_str)
 
 
-#     tic = time.time();
+     tic = time.time();
     te_model = te.loads(SimSBML.toSBML())
-    #     toc = time.time();
-    #     runtime = toc - tic;
-    runtime = 0
+         toc = time.time();
+         runtime = toc - tic;
+
 
     if verbose:
         print(te_model.getCurrentAntimony())
@@ -323,9 +322,7 @@ def define_rate_constants_all(Lambda, scaling_c=None):
     '''
 
     dim_m = Lambda.shape[0]
-    # #species
     dim_s = Lambda.shape[1]
-    # #reversible pairs
 
     if scaling_c is not None:
         scaling_c = np.array(scaling_c)
@@ -373,9 +370,7 @@ def define_rate_constants(Lambda, scaling_c=None):
     '''
 
     dim_m = Lambda.shape[0]
-    # #species
     dim_s = Lambda.shape[1]
-    # #reversible pairs
 
     if scaling_c is not None:
         scaling_c = np.array(scaling_c)
@@ -420,7 +415,6 @@ def new_IC(te_model, u):
     u = np.array(u)
     u = (u.flatten()).reshape(-1)
     dim_m = u.shape[0]
-    #  #variables
 
     list_of_species = [f"init(x{i})" for i in range(dim_m)]
     te_model.setValues(list_of_species, u)
@@ -470,9 +464,7 @@ def check_detailed_balancing(Lambda,
     '''
 
     dim_m = Lambda.shape[0]
-    #  #variables
     dim_s = Lambda.shape[1]
-    #  #reversible pairs
 
     ss_val = np.array(ss_val)
     ss_val = (ss_val.flatten()).reshape(-1)
@@ -549,9 +541,7 @@ def check_compatibility_class_te_rank(Lambda, ss_val, u, verbose=False):
     '''
 
     dim_m = Lambda.shape[0]
-    #  #variables
     dim_s = Lambda.shape[1]
-    #  #reversible pairs
 
     ss_val = np.array(ss_val)
     ss_val = (ss_val.flatten()).reshape(-1)
