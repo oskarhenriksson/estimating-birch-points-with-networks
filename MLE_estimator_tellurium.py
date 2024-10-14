@@ -131,10 +131,10 @@ def MLE_tellurium(Lambda,
         reintegrate_counter = 1
         # integrates again up to 4 more times
         while DB_residual_n > err_tol and reintegrate_counter < maxNumOfIntegrations:
-                         tic = time.time();
+            tic = time.time();
             results = te_model.simulate(0, tfinal, n_timestep)
-                         toc = time.time();
-                         runtime += toc - tic;
+            toc = time.time();
+            runtime += toc - tic;
  
             cnvg_flag, DB_residual_n = check_detailed_balancing(
                 Lambda,
@@ -285,10 +285,10 @@ def write_tellurium_model_via_SBML(Lambda,
                             rxn_id=rxn_id_str)
 
 
-     tic = time.time();
+    tic = time.time();
     te_model = te.loads(SimSBML.toSBML())
-         toc = time.time();
-         runtime = toc - tic;
+    toc = time.time();
+    runtime = toc - tic;
 
 
     if verbose:
@@ -620,9 +620,7 @@ def timescales(Lambda,
                                        eigenvalueAnalysis=True)
 
     eig_real = eig.real
-    eig_imag = eig.imag
     eig_real_nonzero = eig_real[0:Lambda_rk]
-
     return 1 / abs(eig_real_nonzero)
 
 
