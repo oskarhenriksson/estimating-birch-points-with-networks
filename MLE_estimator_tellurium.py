@@ -571,6 +571,7 @@ def check_compatibility_class_te_rank(Lambda, ss_val, u, verbose=False):
 def timescales(Lambda,
                u=None,
                tfinal=1e3,
+               scaling_c=None,
                n_timestep=750,
                u_rand_min=10,
                u_rand_max=50):
@@ -610,13 +611,14 @@ def timescales(Lambda,
                               u_rand_max,
                               size=(1, Lambda.shape[0]))
 
-    te_model = write_tellurium_model_via_SBML(Lambda, return_runtime=False)
+    te_model = write_tellurium_model_via_SBML(Lambda, return_runtime=False, scaling_c=scaling_c)
 
     _, _, _, _, _, eig = MLE_tellurium(Lambda,
                                        te_model,
                                        tfinal,
                                        n_timestep,
                                        u,
+                                       scaling_c=scaling_c,
                                        eigenvalueAnalysis=True)
 
     eig_real = eig.real
