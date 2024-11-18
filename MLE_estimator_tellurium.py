@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import tellurium as te
 import simplesbml
 import time
-
 '''
 Useful tellurium functions:
         te.getODEsFromModel(te_model)
@@ -117,10 +116,10 @@ def MLE_tellurium(Lambda,
     if err_tol is None:
         err_tol = 1e-4
 
-    tic = time.time();
+    tic = time.time()
     results = te_model.simulate(0, tfinal, n_timestep)
-    toc = time.time();
-    runtime = toc - tic;
+    toc = time.time()
+    runtime = toc - tic
 
     if check_convergence:
         cnvg_flag, DB_residual_n = check_detailed_balancing(
@@ -131,11 +130,11 @@ def MLE_tellurium(Lambda,
         reintegrate_counter = 1
         # integrates again up to 4 more times
         while DB_residual_n > err_tol and reintegrate_counter < maxNumOfIntegrations:
-            tic = time.time();
+            tic = time.time()
             results = te_model.simulate(0, tfinal, n_timestep)
-            toc = time.time();
-            runtime += toc - tic;
- 
+            toc = time.time()
+            runtime += toc - tic
+
             cnvg_flag, DB_residual_n = check_detailed_balancing(
                 Lambda,
                 results[n_timestep - 1, 1:-1],
@@ -226,10 +225,9 @@ def write_tellurium_model_via_SBML(Lambda,
 
     # extra species (for zero complex)
     # adding species with concentrations 0
-    for ss in range(dim_m): 
+    for ss in range(dim_m):
         SimSBML.addSpecies('x' + str(ss), 0.0)
     SimSBML.addSpecies('ext_S', 0.0)
-    
 
     for rr in range(dim_s):  ### adding each reversible reactions
         ## SimSBML.addReaction(Reactant_list, Product_list, Rate_law, local_params=params_dict, rxn_id=rxn_id_str)
@@ -284,12 +282,10 @@ def write_tellurium_model_via_SBML(Lambda,
                             local_params=param_dict,
                             rxn_id=rxn_id_str)
 
-
-    tic = time.time();
+    tic = time.time()
     te_model = te.loads(SimSBML.toSBML())
-    toc = time.time();
-    runtime = toc - tic;
-
+    toc = time.time()
+    runtime = toc - tic
 
     if verbose:
         print(te_model.getCurrentAntimony())
@@ -490,10 +486,12 @@ def check_detailed_balancing(Lambda,
     Lambda_negative = np.maximum(-Lambda, 0)
 
     flux_fwd = rate_cnsts_fwd * np.array([
-        np.prod(np.power(ss_val, Lambda_negative[:, rr])) for rr in range(dim_s)
+        np.prod(np.power(ss_val, Lambda_negative[:, rr]))
+        for rr in range(dim_s)
     ])
     flux_bck = rate_cnsts_bck * np.array([
-        np.prod(np.power(ss_val, Lambda_positive[:, rr])) for rr in range(dim_s)
+        np.prod(np.power(ss_val, Lambda_positive[:, rr]))
+        for rr in range(dim_s)
     ])
     flux_diff = flux_fwd - flux_bck
 
@@ -575,7 +573,6 @@ def timescales(Lambda,
                n_timestep=750,
                u_rand_min=10,
                u_rand_max=50):
-    
     '''
     Estimate the timescales of a system based on the eigenvalues of the Jacobian,
     using the function `MLE_tellurium` to trace the trajectories of the system.
@@ -604,6 +601,48 @@ def timescales(Lambda,
         Array of timescales (inverse of the real parts of nonzero eigenvalues).
     '''
 
+    eig_real_nonzero = real_part_of_eigenvalues(Lambda, u, tfinal, scaling_c,
+                                                n_timestep, u_rand_min,
+                                                u_rand_max)
+
+    return 1 / abs(eig_real_nonzero)
+
+
+def real_part_of_eigenvalues(Lambda,
+                             u=None,
+                             tfinal=1e3,
+                             scaling_c=None,
+                             n_timestep=750,
+                             u_rand_min=10,
+                             u_rand_max=50):
+    '''
+    Estimate the real part of the eigenvalues of the Jacobian for the system,
+    using the function `MLE_tellurium` to trace the trajectories of the system.
+    
+    If no initial condition u is provided, a random vector u is generated within 
+    the range [u_rand_min, u_rand_max].
+    
+    Parameters
+    ----------
+    Lambda : np.array, size m * m.
+        A square matrix that defines the system's dynamics.
+    u : np.array, size (m,), optional.
+        Initial condition for the system. If None, a random vector will be generated.
+    tfinal : float, optional.
+        Final time for the simulation. Default is 1e3.
+    n_timestep : int, optional.
+        Number of time steps for the simulation. Default is 750.
+    u_rand_min : int, optional.
+        Minimum value for generating random initial conditions if u is not provided. Default is 10.
+    u_rand_max : int, optional.
+        Maximum value for generating random initial conditions if u is not provided. Default is 50.
+
+    Returns
+    -------
+    real_part_of_eigenvalues : np.array
+        Array of the real part of the nonzero eigenvalues.
+    '''
+
     Lambda_rk = te.rank(Lambda)
 
     if u is None:
@@ -611,7 +650,9 @@ def timescales(Lambda,
                               u_rand_max,
                               size=(1, Lambda.shape[0]))
 
-    te_model = write_tellurium_model_via_SBML(Lambda, return_runtime=False, scaling_c=scaling_c)
+    te_model = write_tellurium_model_via_SBML(Lambda,
+                                              return_runtime=False,
+                                              scaling_c=scaling_c)
 
     _, _, _, _, _, eig = MLE_tellurium(Lambda,
                                        te_model,
@@ -622,8 +663,7 @@ def timescales(Lambda,
                                        eigenvalueAnalysis=True)
 
     eig_real = eig.real
-    eig_real_nonzero = eig_real[0:Lambda_rk]
-    return 1 / abs(eig_real_nonzero)
+    return eig_real[0:Lambda_rk]
 
 
 #     '''
