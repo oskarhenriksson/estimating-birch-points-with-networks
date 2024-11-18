@@ -5,7 +5,8 @@ This repository contains code for the paper [Maximum likelihood estimation of lo
 General code for estimating eigenvalues and timescales at the positive steady state for the network $G_{\Lambda,c}$ introduced in the paper can be found in the files `MLE_estimator_IPS.py` and 
 `MLE_estimator_tellurium.py`. 
 
-Code for generating the figures found in §5.3 of the paper can be found in the Jupyter notebook `experiments.ipynb`.
+Code for generating the figures found in §5.3 of the paper can be found in the Jupyter notebook `experiments.ipynb`. Raw data from the experiments is included in the directories `4_cycle` and 
+`independence_model_10_10`, respectively.
 
 ## Dependencies
 The code is based on Python 3.10.12, using the packages NumPy 1.26.4, Scipy 1.11.4, and Tellurium 2.2.10.
